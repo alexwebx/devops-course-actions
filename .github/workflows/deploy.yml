@@ -1,20 +1,25 @@
-name: CI Pipeline
+name: Deploy
  
 on:
   push:
     branches: [main]
  
 jobs:
-  build:
+  checks:
+    uses: ./.github/workflows/pr-check.yml
+ 
+  deploy:
+    needs: checks
     runs-on: ubuntu-latest
+ 
     steps:
-      - uses: actions/checkout@v3
- 
-      - name: Установка зависимостей
-        run: npm ci
- 
-      - name: Линтинг
-        run: npm run lint
- 
-      - name: Запуск тестов
-        run: npm run test
+      - name: Deploy via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          script: |
+            cd /var/www/myapp/backend
+            git pull origin main
+            cd /var/www/myapp
